@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
 
 class AddTodoPage extends StatefulWidget {
   const AddTodoPage({super.key});
@@ -8,6 +12,10 @@ class AddTodoPage extends StatefulWidget {
 }
 
 class _AddTodoPageState extends State<AddTodoPage> {
+
+  TextEditingController titleController = TextEditingController();
+  TextEditingController descriptionController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,11 +26,13 @@ class _AddTodoPageState extends State<AddTodoPage> {
         padding: const EdgeInsets.all(16.0),
         children: [
           TextField(
+            controller: titleController,
             decoration: InputDecoration(
               labelText: 'Title',
             ),
           ),
           TextField(
+            controller: descriptionController,
             decoration: InputDecoration(
               labelText: 'Description',
             ),
@@ -33,7 +43,7 @@ class _AddTodoPageState extends State<AddTodoPage> {
           SizedBox(height: 20.0),
           ElevatedButton(
             onPressed: () {
-              // Handle save action
+              submitData();
             },
             child: Text('Submit'),
           ),
@@ -41,5 +51,24 @@ class _AddTodoPageState extends State<AddTodoPage> {
       ),
       
     );
+  }
+
+  Future<void> submitData() async {
+    // get data from text fields
+    
+    final String title = titleController.text;
+    final String description = descriptionController.text;
+    final body = {
+      'title': title,
+      'description': description,
+      'completed': false,
+    };
+
+    // send data to backend server
+    final uri = Uri.parse('http://127.0.0.1:8000/api/todos/');
+    final response = await http.post(uri, body: jsonEncode(body));
+    // handle response in UI
+    print(response.statusCode);
+    print(response.body);
   }
 }

@@ -56,8 +56,8 @@ class _AddTodoPageState extends State<AddTodoPage> {
   Future<void> submitData() async {
     // get data from text fields
     
-    final String title = titleController.text;
-    final String description = descriptionController.text;
+    final title = titleController.text;
+    final description = descriptionController.text;
     final body = {
       'title': title,
       'description': description,
@@ -65,10 +65,39 @@ class _AddTodoPageState extends State<AddTodoPage> {
     };
 
     // send data to backend server
-    final uri = Uri.parse('http://127.0.0.1:8000/api/todos/');
-    final response = await http.post(uri, body: jsonEncode(body));
+    final url = 'http://10.0.2.2:8000/api/todos/';
+    final uri = Uri.parse(url);
+    final response = await http.post(
+      uri, 
+      body: jsonEncode(body), 
+      headers: {
+      'Content-Type': 'application/json',
+    });
     // handle response in UI
-    print(response.statusCode);
+    if (response.statusCode == 201) {
+      titleController.clear();
+      descriptionController.clear();
+      print("Creation Successful");
+      successMessage("Todo Created Successfully");
+    } else {
+      print("Creation Failed");
+      errorMessage("Failed to Create Todo");
+    }
     print(response.body);
+  }
+
+  void successMessage(String message) {
+    final snackBar = SnackBar(
+      content: Text(message),
+      backgroundColor: Colors.green,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+  void errorMessage(String message) {
+    final snackBar = SnackBar(
+      content: Text(message),
+      backgroundColor: Colors.red,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 }

@@ -13,7 +13,7 @@ class TodoListPage extends StatefulWidget {
 
 class _TodoListPageState extends State<TodoListPage> {
   bool isLoading = true;
-  List items = [];
+  List<dynamic> items = [];
 
   @override
   void initState() {
@@ -27,23 +27,43 @@ class _TodoListPageState extends State<TodoListPage> {
       appBar: AppBar(title: const Text('Todo List')),
       body: Visibility(
         visible: isLoading,
-        child: const Center(child: CircularProgressIndicator()),
         replacement: RefreshIndicator(
           onRefresh: fetchData,
           child: ListView.builder(
             itemCount: items.length,
             itemBuilder: (context, index) {
               final item = items[index];
+              final id = item['id'].toString();
               return ListTile(
-                leading: CircleAvatar(
-                  child: Text('${index + 1}'),
-                ),
+                leading: CircleAvatar(child: Text('${index + 1}')),
                 title: Text(item['title']),
                 subtitle: Text(item['description'] ?? ''),
-                );
+                trailing: PopupMenuButton(
+                  onSelected: (value) {
+                    // Handle menu item selection
+                    if (value == 'edit') {
+                      // Navigate to edit page
+                      navigateToEditPage(item);
+                    } else if (value == 'delete') {
+                      // Handle delete action
+                      deleteById(id);
+                    }
+                  },
+                  itemBuilder: (context) {
+                    return [
+                      const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Delete'),
+                      ),
+                    ];
+                  },
+                ),
+              );
             },
           ),
         ),
+        child: const Center(child: CircularProgressIndicator()),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -54,14 +74,44 @@ class _TodoListPageState extends State<TodoListPage> {
     );
   }
 
-  void navigateToAddTodoPage() {
+  Future<void> navigateToEditPage(Map item) async {
+    final route = MaterialPageRoute(
+      builder: (context) {
+        return AddTodoPage(todo: item);
+      },
+    );
+    await Navigator.push(context, route);
+    setState(() {
+      isLoading = true;
+    });
+    fetchData();
+  }
+
+  Future<void> navigateToAddTodoPage() async {
     final route = MaterialPageRoute(
       builder: (context) {
         return AddTodoPage();
       },
     );
-    print(items);
-    Navigator.push(context, route);
+    await Navigator.push(context, route);
+    setState(() {
+      isLoading = true;
+    });
+    fetchData();
+  }
+
+  Future<void> deleteById(id) async {
+    final uri = Uri.parse('http://10.0.2.2:8000/api/todos/$id/');
+    final response = await http.delete(uri);
+    if (response.statusCode == 204) {
+      final filtered = items.where((item) => item['id'].toString() != id).toList();
+      setState(() {
+        items = filtered;
+      });
+      successMessage("Todo Deleted Successfully");
+    } else {
+      errorMessage("Failed to Delete Todo");
+    }
   }
 
   Future<void> fetchData() async {
@@ -77,5 +127,21 @@ class _TodoListPageState extends State<TodoListPage> {
     setState(() {
       isLoading = false;
     });
+  }
+
+  
+  void successMessage(String message) {
+    final snackBar = SnackBar(
+      content: Text(message),
+      backgroundColor: Colors.green,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+  void errorMessage(String message) {
+    final snackBar = SnackBar(
+      content: Text(message),
+      backgroundColor: Colors.red,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 }
